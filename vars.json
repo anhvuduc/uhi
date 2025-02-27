@@ -1,0 +1,11 @@
+{
+    "city": "hanoi",
+    "image_collection": "MODIS/061/MYD11A2",
+    "start_date": "2002-01-01",
+    "end_date": "2026-01-01",
+    "data_band": "LST_Day_1km",
+    "qc_band": "QC_Day",
+    "SERVICE_ACCOUNT": "ducanh@ee-docxducanh.iam.gserviceaccount.com",
+    "KEY_FILE": "/opt/airflow/key.json"
+  }
+  
