@@ -6,7 +6,6 @@ import numpy as np
 import rasterio
 import rasterio.mask
 import fiona
-from osgeo import gdal
 import pymannkendall as mk
 from airflow.models import Variable
 
@@ -42,12 +41,12 @@ os.makedirs(img_res_path, exist_ok=True)
 shp_path = f"/app/data/{city}/shapefile.shp"
 
 # --------------------------
-# Load the block raster data
+# Load the block raster data using rasterio (instead of GDAL)
 # --------------------------
-raster_dataset = gdal.Open(raster_path)
-raster_data = raster_dataset.ReadAsArray()  # Expecting shape: [nband, rows, cols]
-nband, rows, cols = raster_data.shape
-print("Raster dimensions (bands, rows, cols):", nband, rows, cols)
+with rasterio.open(raster_path) as src:
+    raster_data = src.read()  # Expecting shape: [nband, rows, cols]
+    nband, rows, cols = raster_data.shape
+    print("Raster dimensions (bands, rows, cols):", nband, rows, cols)
 
 # --------------------------
 # Create an empty container for seasonal trend results
@@ -108,7 +107,7 @@ Tau_array[mask_p] = np.nan
 slope_array[mask_p] = np.nan
 
 # --------------------------
-# Read metadata from the input block raster
+# Read metadata from the input block raster using rasterio
 # --------------------------
 with rasterio.open(raster_path) as src:
     meta = src.meta
