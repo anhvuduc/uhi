@@ -5,5 +5,3 @@ plugins/
 data/
 logs/
 dags/__pycache__/
-dags/*.pyc
-dags/*.log
