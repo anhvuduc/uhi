@@ -4,3 +4,4 @@ config/
 plugins/
 data/
 logs/
+dags/__pycache__/
