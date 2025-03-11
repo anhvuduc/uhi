@@ -7,14 +7,14 @@ import rasterio
 import rasterio.mask
 import fiona
 import pymannkendall as mk
-from airflow.models import Variable
+# from airflow.models import Variable
 
 # --------------------------
 # Retrieve parameters from Airflow Variables
 # --------------------------
-city = Variable.get("city", default_var="hanoi")
-image_collection = Variable.get("image_collection", default_var="MODIS/061/MYD11A2")
-data_band = Variable.get("data_band", default_var="LST_Day_1km")
+city = "hanoi" #Variable.get("city", default_var="hanoi")
+image_collection = "MODIS/061/MYD11A2"#Variable.get("image_collection", default_var="MODIS/061/MYD11A2")
+data_band = "LST_Day_1km" #Variable.get("data_band", default_var="LST_Day_1km")
 # Build a folder name similar to block.py
 raw_folder = f"{image_collection.split('/')[-1]}_{data_band}".lower()
 
@@ -22,10 +22,10 @@ raw_folder = f"{image_collection.split('/')[-1]}_{data_band}".lower()
 # Define input and output paths
 # --------------------------
 # Input block raster created by block.py (named "block.tif")
-raster_path = f"/app/data/{city}/{raw_folder}_block/block.tif"
+block_path =  r'D:\Project\MODIS\data\hanoi\myd11a2_lst_day_1km_block\block.tif' # f"/app/data/{city}/{raw_folder}_block/block.tif"
 
 # Define output directory for Mann-Kendall results
-mk_dir = f"/app/data/{city}/{raw_folder}_mk"
+mk_dir = r'D:\Project\MODIS\data\hanoi\myd11a2_lst_day_1km_mk'# f"/app/data/{city}/{raw_folder}_mk"
 os.makedirs(mk_dir, exist_ok=True)
 output_raster_path = os.path.join(mk_dir, "smk.tif")
 
@@ -38,12 +38,12 @@ img_res_path = os.path.join(result_dir, "img")
 os.makedirs(img_res_path, exist_ok=True)
 
 # Define the shapefile path for masking (update this path accordingly)
-shp_path = f"/app/data/{city}/shapefile.shp"
+shp_path = r'D:\Project\MODIS\shp\hanoi\hanoi.shp' #f"/app/data/{city}/shapefile.shp"
 
 # --------------------------
 # Load the block raster data using rasterio (instead of GDAL)
 # --------------------------
-with rasterio.open(raster_path) as src:
+with rasterio.open(block_path) as src:
     raster_data = src.read()  # Expecting shape: [nband, rows, cols]
     nband, rows, cols = raster_data.shape
     print("Raster dimensions (bands, rows, cols):", nband, rows, cols)
@@ -109,7 +109,7 @@ slope_array[mask_p] = np.nan
 # --------------------------
 # Read metadata from the input block raster using rasterio
 # --------------------------
-with rasterio.open(raster_path) as src:
+with rasterio.open(block_path) as src:
     meta = src.meta
     transform = src.transform
     crs = src.crs
@@ -127,7 +127,7 @@ meta.update({
 with fiona.open(shp_path, 'r') as shp:
     shapes = [feature["geometry"] for feature in shp]
 
-with rasterio.open(raster_path) as src:
+with rasterio.open(block_path) as src:
     out_image, out_transform = rasterio.mask.mask(src, shapes, crop=False, nodata=np.nan)
     mask_shape = out_image[0, :, :] == src.nodata
 
