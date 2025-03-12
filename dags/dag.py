@@ -75,13 +75,13 @@ mean_ee_task = BashOperator(
     dag=dag
 )
 
-mk_task = BashOperator(
-    task_id='mk_task',
-    bash_command='python /opt/airflow/tasks/mk.py',
-    dag=dag
-)
+# mk_task = BashOperator(
+#     task_id='mk_task',
+#     bash_command='python /opt/airflow/tasks/mk.py',
+#     dag=dag
+# )
 
 # Define task dependencies: extract -> wait -> download
 extract_task >> download_task >> crop_task >> check_quality
-crop_task >> mean_task >> block_task >> mk_task
+crop_task >> mean_task >> block_task #>> mk_task
 crop_task >> mean_ee_task
