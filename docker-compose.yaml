@@ -82,8 +82,8 @@ x-airflow-common:
     - ./tasks/:/opt/airflow/tasks/
     - ./shp/:/opt/airflow/shp/
     - ./data/:/app/data/
-  # user: "${AIRFLOW_UID:-50000}:0" # for windows user
-  user: "${AIRFLOW_UID:-1002}:0" # for ubuntu user
+  user: "${AIRFLOW_UID:-1002}:0" # for ubuntu
+  # user: "${AIRFLOW_UID:-50000}:0" # for windows
 
   depends_on:
     &airflow-common-depends-on
