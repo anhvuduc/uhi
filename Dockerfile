@@ -12,4 +12,4 @@ ENV AIRFLOW__CORE__LOAD_EXAMPLES=False
 ENV AIRFLOW__CORE__EXECUTOR=LocalExecutor
 
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
-RUN airflow variables import vars.json
+# RUN airflow variables import vars.json

@@ -65,52 +65,52 @@ def download_task():
     expected_num = int(Variable.get('num_images', default_var='0'))
     print(f"Expected number of images: {expected_num}")
     
-    # Check the current number of TIF files
-    tif_count, items = count_tif_files()
-    print(f"Found {tif_count} TIF file(s) in folder '{raw_folder}'.")
+    # # Check the current number of TIF files
+    # tif_count, items = count_tif_files()
+    # print(f"Found {tif_count} TIF file(s) in folder '{raw_folder}'.")
 
-    # Retry up to 3 times with a 5-minute delay if not all images are present
-    retry_count = 0
-    max_retries = 3
-    while tif_count < expected_num and retry_count < max_retries:
-        print("Not all images have been uploaded to Drive yet. Waiting for 5 minutes before checking again...")
-        time.sleep(300)  # Wait for 5 minutes (300 seconds)
-        retry_count += 1
-        tif_count, items = count_tif_files()
-        print(f"After waiting, found {tif_count} TIF file(s) in folder '{raw_folder}'.")
+    # # Retry up to 3 times with a 5-minute delay if not all images are present
+    # retry_count = 0
+    # max_retries = 3
+    # while tif_count < expected_num and retry_count < max_retries:
+    #     print("Not all images have been uploaded to Drive yet. Waiting for 5 minutes before checking again...")
+    #     time.sleep(300)  # Wait for 5 minutes (300 seconds)
+    #     retry_count += 1
+    #     tif_count, items = count_tif_files()
+    #     print(f"After waiting, found {tif_count} TIF file(s) in folder '{raw_folder}'.")
 
-    if tif_count < expected_num:
-        print("Error: Expected number of images not reached after retries. Exiting without downloading.")
-        return
+    # if tif_count < expected_num:
+    #     print("Error: Expected number of images not reached after retries. Exiting without downloading.")
+    #     return
     
-    # Proceed to download each file (only .tif files, skipping subfolders)
-    for item in items:
-        file_id = item['id']
-        file_name = item['name']
-        mime_type = item['mimeType']
+    # # Proceed to download each file (only .tif files, skipping subfolders)
+    # for item in items:
+    #     file_id = item['id']
+    #     file_name = item['name']
+    #     mime_type = item['mimeType']
         
-        if mime_type == 'application/vnd.google-apps.folder':
-            print(f"Skipping subfolder: {file_name} (ID: {file_id})")
-            continue
-        if not file_name.lower().endswith('.tif'):
-            print(f"Skipping non-TIF file: {file_name}")
-            continue
+    #     if mime_type == 'application/vnd.google-apps.folder':
+    #         print(f"Skipping subfolder: {file_name} (ID: {file_id})")
+    #         continue
+    #     if not file_name.lower().endswith('.tif'):
+    #         print(f"Skipping non-TIF file: {file_name}")
+    #         continue
         
-        print(f"Downloading: {file_name} (ID: {file_id})")
-        request = service.files().get_media(fileId=file_id)
-        fh = io.BytesIO()
-        downloader = MediaIoBaseDownload(fh, request)
-        done = False
+    #     print(f"Downloading: {file_name} (ID: {file_id})")
+    #     request = service.files().get_media(fileId=file_id)
+    #     fh = io.BytesIO()
+    #     downloader = MediaIoBaseDownload(fh, request)
+    #     done = False
         
-        while not done:
-            status, done = downloader.next_chunk()
-            if status:
-                print(f"Download {int(status.progress() * 100)}% complete for {file_name}.")
+    #     while not done:
+    #         status, done = downloader.next_chunk()
+    #         if status:
+    #             print(f"Download {int(status.progress() * 100)}% complete for {file_name}.")
         
-        destination_path = os.path.join(destination_dir, file_name)
-        with open(destination_path, 'wb') as f:
-            f.write(fh.getvalue())
-        print(f"Downloaded {file_name} to {destination_path}")
+    #     destination_path = os.path.join(destination_dir, file_name)
+    #     with open(destination_path, 'wb') as f:
+    #         f.write(fh.getvalue())
+    #     print(f"Downloaded {file_name} to {destination_path}")
 
 def main():
     try:
@@ -120,7 +120,7 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
+
 # # # download.py
 # #!/usr/bin/env python
 # import io

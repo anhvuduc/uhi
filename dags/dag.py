@@ -14,7 +14,7 @@ default_args = {
 }
 
 dag = DAG(
-    'a',
+    'task_01',
     default_args=default_args,
     schedule_interval=None,
     catchup=False
@@ -22,12 +22,12 @@ dag = DAG(
 
 # Task 1: Export (Extract)
 # The extract.py script should print only the number of images as its final output.
-extract_task = BashOperator(
-    task_id='extract_task',
-    bash_command='python /opt/airflow/tasks/extract.py',
-    do_xcom_push=True,  # Capture stdout and push it to XCom
-    dag=dag
-)
+# extract_task = BashOperator(
+#     task_id='extract_task',
+#     bash_command='python /opt/airflow/tasks/extract.py',
+#     do_xcom_push=True,  # Capture stdout and push it to XCom
+#     dag=dag
+# )
 
 # # Task 2: Wait for Exports (Pre-download)
 # # This script will be passed the expected image count (num_images) via a command-line argument.
@@ -45,43 +45,43 @@ download_task = BashOperator(
     dag=dag
 )
 
-crop_task = BashOperator(
-    task_id='crop_task',
-    bash_command='python /opt/airflow/tasks/crop.py',
-    dag=dag
-)
-
-check_quality = BashOperator(
-    task_id='quality_task',
-    bash_command='python /opt/airflow/tasks/quality.py',
-    dag=dag
-)
-
-mean_task = BashOperator(
-    task_id='mean_task',
-    bash_command='python /opt/airflow/tasks/mean.py',
-    dag=dag
-)
-
-block_task = BashOperator(
-    task_id='block_task',
-    bash_command='python /opt/airflow/tasks/block.py',
-    dag=dag
-)
-
-mean_ee_task = BashOperator(
-    task_id='mean_ee_task',
-    bash_command='python /opt/airflow/tasks/mean_ee.py',
-    dag=dag
-)
-
-# mk_task = BashOperator(
-#     task_id='mk_task',
-#     bash_command='python /opt/airflow/tasks/mk.py',
+# crop_task = BashOperator(
+#     task_id='crop_task',
+#     bash_command='python /opt/airflow/tasks/crop.py',
 #     dag=dag
 # )
 
-# Define task dependencies: extract -> wait -> download
-extract_task >> download_task >> crop_task >> check_quality
-crop_task >> mean_task >> block_task #>> mk_task
-crop_task >> mean_ee_task
+# check_quality = BashOperator(
+#     task_id='quality_task',
+#     bash_command='python /opt/airflow/tasks/quality.py',
+#     dag=dag
+# )
+
+# mean_task = BashOperator(
+#     task_id='mean_task',
+#     bash_command='python /opt/airflow/tasks/mean.py',
+#     dag=dag
+# )
+
+# block_task = BashOperator(
+#     task_id='block_task',
+#     bash_command='python /opt/airflow/tasks/block.py',
+#     dag=dag
+# )
+
+# mean_ee_task = BashOperator(
+#     task_id='mean_ee_task',
+#     bash_command='python /opt/airflow/tasks/mean_ee.py',
+#     dag=dag
+# )
+
+# # mk_task = BashOperator(
+# #     task_id='mk_task',
+# #     bash_command='python /opt/airflow/tasks/mk.py',
+# #     dag=dag
+# # )
+download_task
+# # Define task dependencies: extract -> wait -> download
+# extract_task >> download_task >> crop_task >> check_quality
+# crop_task >> mean_task >> block_task #>> mk_task
+# crop_task >> mean_ee_task
