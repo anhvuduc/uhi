@@ -95,4 +95,4 @@ def apply_mask_ndvi(image, data_bands, qc_band):
     """
     # Logic bitmask của MOD13 và VNP13 cơ bản giống nhau ở các bit đầu
     # Nên có thể dùng chung hàm apply_mask_viirs_vi
-    return apply_mask_viirs_vi(image, data_bands, qc_band)
+    return apply_mask_vi_viirs(image, data_bands, qc_band)

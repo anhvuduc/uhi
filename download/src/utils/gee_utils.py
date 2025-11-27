@@ -44,7 +44,7 @@ def get_date_range(mode, params=None):
     Tính toán start_date và end_date dựa trên Mode chạy.
     
     Args:
-        mode (str): 'monthly', 'yearly', 'historical', 'custom'
+        mode (str): 'yearly', 'historical', 'custom'
         params (dict): Các tham số từ Airflow (dag_run.conf)
         
     Returns:
@@ -52,15 +52,7 @@ def get_date_range(mode, params=None):
     """
     today = datetime.now()
     
-    if mode == 'monthly':
-        # Mặc định: Chạy cho tháng trước
-        # VD: Chạy ngày 05/02/2024 -> Lấy dữ liệu T1/2024 (01/01 - 01/02)
-        last_month = today - relativedelta(months=1)
-        start_date = last_month.replace(day=1).strftime('%Y-%m-%d')
-        end_date = today.replace(day=1).strftime('%Y-%m-%d')
-        return start_date, end_date
-        
-    elif mode == 'yearly':
+    if mode == 'yearly':
         # Mặc định: Chạy cho năm ngoái
         last_year = today.year - 1
         start_date = f"{last_year}-01-01"
@@ -80,3 +72,32 @@ def get_date_range(mode, params=None):
         return 'HISTORICAL', 'HISTORICAL'
         
     return None, None
+
+def generate_date_chunks(start_date, end_date):
+    """
+    Generator chia nhỏ khoảng thời gian thành các chunk (mặc định theo tháng).
+    Giúp đồng bộ logic giữa bước Estimate và Execution.
+    
+    Yields:
+        tuple: (chunk_start_str, chunk_end_str)
+    """
+    start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+    end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+    current_dt = start_dt
+    
+    while current_dt < end_dt:
+        # Logic: Lấy ngày đầu tháng sau
+        next_month = current_dt + timedelta(days=32)
+        next_month = next_month.replace(day=1)
+        
+        chunk_end_dt = min(next_month, end_dt)
+        
+        chunk_start_str = current_dt.strftime('%Y-%m-%d')
+        chunk_end_str = chunk_end_dt.strftime('%Y-%m-%d')
+        
+        if chunk_start_str == chunk_end_str:
+            break
+            
+        yield chunk_start_str, chunk_end_str
+        
+        current_dt = chunk_end_dt

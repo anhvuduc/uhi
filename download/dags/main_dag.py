@@ -15,7 +15,7 @@ sys.path.append(os.path.join(airflow_home, 'dags')) # Để import src (nếu sr
 from src.utils.gee_quota import check_gee_quota
 from src.utils.gee_coordinator import wait_for_tasks
 from src.utils.gcs_scan import check_bucket
-from src.utils.gee_utils import get_date_range, get_satellite_dates
+from src.utils.gee_utils import get_date_range, get_satellite_dates, generate_date_chunks
 from src.process.gee_export import export_to_bucket
 from src.process.file_download import run_download_pipeline
 from src.auth import initialize_gee
@@ -43,7 +43,7 @@ dag = DAG(
     catchup=False,
     tags=['gee', 'unified', 'optimized', 'v2'],
     params={
-        'mode': Param('monthly', enum=['monthly', 'yearly', 'historical', 'custom'], description="Chế độ chạy"),
+        'mode': Param('custom', enum=['yearly', 'historical', 'custom'], description="Chế độ chạy"),
         'start_date': Param('2023-01-01', type='string', format='date', description="Ngày bắt đầu (cho mode custom)"),
         'end_date': Param('2023-01-31', type='string', format='date', description="Ngày kết thúc (cho mode custom)"),
     }
@@ -70,7 +70,7 @@ def task_export(**kwargs):
     """
     # 1. Lấy Params & Mode
     params = kwargs['params']
-    mode = params.get('mode', 'monthly')
+    mode = params.get('mode', 'custom')
     print(f"🚀 [START] Bắt đầu Export với chế độ: {mode.upper()}")
     
     initialize_gee()
@@ -96,23 +96,9 @@ def task_export(**kwargs):
             if mode == 'historical':
                 s_date, e_date = get_satellite_dates(sat_config['id'])
             
-            start_dt = datetime.strptime(s_date, '%Y-%m-%d')
-            end_dt = datetime.strptime(e_date, '%Y-%m-%d')
-            current_dt = start_dt
-            
-            while current_dt < end_dt:
-                next_month = current_dt + timedelta(days=32)
-                next_month = next_month.replace(day=1)
-                chunk_end_dt = min(next_month, end_dt)
-                
-                chunk_start_str = current_dt.strftime('%Y-%m-%d')
-                chunk_end_str = chunk_end_dt.strftime('%Y-%m-%d')
-                
-                if chunk_start_str == chunk_end_str:
-                    break
-                
+            # Sử dụng generator chung
+            for _, _ in generate_date_chunks(s_date, e_date):
                 total_estimated_tasks += 1
-                current_dt = chunk_end_dt
 
     print(f"📊 [ESTIMATE] TỔNG SỐ TASK DỰ KIẾN: {total_estimated_tasks}")
     # --------------------------------------------------------------------------
@@ -133,26 +119,8 @@ def task_export(**kwargs):
             
             # Chuyển đổi string sang datetime để loop (nếu cần chia nhỏ)
             # Ở đây ta sẽ chia nhỏ theo THÁNG để tránh task quá lớn (Best Practice GEE)
-            start_dt = datetime.strptime(s_date, '%Y-%m-%d')
-            end_dt = datetime.strptime(e_date, '%Y-%m-%d')
-            
-            current_dt = start_dt
-            while current_dt < end_dt:
-                # Tính ngày cuối tháng hoặc end_date
-                # Logic: Lấy ngày đầu tháng sau, rồi trừ 1 ngày -> cuối tháng này? 
-                # Hoặc đơn giản: Loop từng tháng: 2000-01-01 -> 2000-02-01
-                
-                next_month = current_dt + timedelta(days=32)
-                next_month = next_month.replace(day=1) # Ngày 1 tháng sau
-                
-                chunk_end_dt = min(next_month, end_dt)
-                
-                # Format lại thành string cho hàm export
-                chunk_start_str = current_dt.strftime('%Y-%m-%d')
-                chunk_end_str = chunk_end_dt.strftime('%Y-%m-%d')
-                
-                if chunk_start_str == chunk_end_str:
-                    break
+            # 5. Loop qua từng chunk thời gian (sử dụng generator chung)
+            for chunk_start_str, chunk_end_str in generate_date_chunks(s_date, e_date):
                 
                 # --- BATCHING LOGIC (Manual Limit) ---
                 while True:
@@ -177,9 +145,6 @@ def task_export(**kwargs):
                 
                 if task_id and task_id != "SKIPPED":
                     submitted_tasks.append(task_id)
-                
-                # Next loop
-                current_dt = chunk_end_dt
                 
     # 5. Trả về danh sách task ID
     print(f"📊 [SUMMARY] Đã gửi {len(submitted_tasks)} tasks lên GEE.")

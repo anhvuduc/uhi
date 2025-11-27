@@ -24,10 +24,15 @@ def export_to_bucket(
         existing_files = set()
 
     # 1. Cấu hình tên file và đường dẫn (Load)
+    # 1. Cấu hình tên file và đường dẫn (Load)
     col_id = collection_info['id']
     
     # Chuẩn hóa thông tin
-    product_short_name = col_id.split('/')[-1].upper()
+    if isinstance(col_id, list):
+        # Nếu là list (Composite), lấy tên từ config hoặc mặc định
+        product_short_name = collection_info.get('product_name', 'COMPOSITE')
+    else:
+        product_short_name = col_id.split('/')[-1].upper()
     
     # Định dạng ngày gọn
     s_date = start_date.replace('-', '')
@@ -59,10 +64,20 @@ def export_to_bucket(
 
     # 3. Router Logic
     def apply_filters(img):
+        # Lấy ID của ảnh để biết nó thuộc MOD hay MYD (quan trọng khi merge)
+        img_id = img.get('system:index') # Hoặc check metadata khác nếu cần
+        
+        # Lưu ý: Khi merge, col_id ở ngoài là list, nên logic check ID bên trong cần linh hoạt
+        # Tuy nhiên, các hàm filter hiện tại check dựa trên 'col_id' biến global (closure).
+        # Cần sửa logic này nếu col_id là list.
+        
+        # Tạm thời: Với VI, logic MOD và MYD giống hệt nhau (DetailedQA), nên không cần phân biệt quá kỹ.
         if prod_type == 'LST':
-            if 'MODIS' in col_id or 'MYD' in col_id or 'MOD' in col_id:
+            # Logic LST cần phân biệt MOD/MYD/VNP
+            # Nhưng hiện tại LST chưa gộp, nên col_id vẫn là string.
+            if 'MODIS' in str(col_id) or 'MYD' in str(col_id) or 'MOD' in str(col_id):
                 return apply_mask_lst_modis(img, data_bands, qc_band)
-            elif 'VIIRS' in col_id or 'VNP' in col_id:
+            elif 'VIIRS' in str(col_id) or 'VNP' in str(col_id):
                 return apply_mask_lst_viirs(img, data_bands, qc_band)
         elif prod_type == 'VI':
             return apply_mask_ndvi(img, data_bands, qc_band)
@@ -70,9 +85,15 @@ def export_to_bucket(
 
     # 4. Lấy dữ liệu, Xử lý và Export
     try:
-        col = ee.ImageCollection(col_id)\
-                .filterDate(start_date, end_date)\
-                .filterBounds(roi)
+        if isinstance(col_id, list):
+            # Merge Collections
+            col = ee.ImageCollection(col_id[0])
+            for cid in col_id[1:]:
+                col = col.merge(ee.ImageCollection(cid))
+        else:
+            col = ee.ImageCollection(col_id)
+            
+        col = col.filterDate(start_date, end_date).filterBounds(roi)
         
         count = col.limit(1).size().getInfo()
         if count == 0:

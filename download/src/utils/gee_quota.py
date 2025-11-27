@@ -11,10 +11,13 @@ def check_gee_quota():
         initialize_gee()
         
         # Lấy danh sách task
-        # limit=5000 để đếm được nhiều, nhưng cẩn thận timeout nếu quá nhiều
-        tasks = ee.data.getTaskList(params={'state': ['READY', 'RUNNING']})
+        # Lấy danh sách task (không dùng params vì API không hỗ trợ)
+        all_tasks = ee.data.getTaskList()
         
-        count = len(tasks)
+        # Lọc client-side
+        running_tasks = [t for t in all_tasks if t['state'] in ['READY', 'RUNNING']]
+        
+        count = len(running_tasks)
         print(f"📊 [QUOTA] Current GEE Tasks (Ready/Running): {count}")
         
         return count

@@ -4,11 +4,17 @@ from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from config.config import SERVICE_ACCOUNT_FILE, EE_PROJECT_ID
 
+_gee_initialized = False
+
 def initialize_gee():
     """
     Khởi tạo kết nối với Google Earth Engine sử dụng Service Account.
     Hàm này thay thế cho ee.Authenticate() (vốn cần trình duyệt).
     """
+    global _gee_initialized
+    if _gee_initialized:
+        return True
+
     try:
         # 1. Kiểm tra file key tồn tại không
         if not os.path.exists(SERVICE_ACCOUNT_FILE):
@@ -16,7 +22,10 @@ def initialize_gee():
 
         # 2. Tạo Credentials từ file JSON
         # Scope này cấp quyền truy cập đầy đủ vào Earth Engine
-        scopes = ['https://www.googleapis.com/auth/earthengine']
+        scopes = [
+            'https://www.googleapis.com/auth/earthengine',
+            'https://www.googleapis.com/auth/cloud-platform' 
+        ]
         
         credentials = service_account.Credentials.from_service_account_file(
             SERVICE_ACCOUNT_FILE, 
@@ -31,6 +40,7 @@ def initialize_gee():
         )
         
         print(f"✅ [AUTH] Đã kết nối GEE thành công với Project: {EE_PROJECT_ID}")
+        _gee_initialized = True
         return True
 
     except Exception as e:

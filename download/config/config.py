@@ -27,9 +27,9 @@ LOCAL_DATA_DIR = os.getenv('DATA_DIR', '/opt/data_storage')
 # Mapping: Tên thành phố (viết thường) -> Asset ID trên GEE
 ROIS = {
     'hanoi': 'users/anhvuduc/hanoi',
-    'haiphong': 'users/anhvuduc/haiphong_blv',
-    'danang': 'users/anhvuduc/dn_hs',
-    'hcm': 'users/anhvuduc/hcm'
+    # 'haiphong': 'users/anhvuduc/haiphong_blv',
+    # 'danang': 'users/anhvuduc/dn_hs',
+    # 'hcm': 'users/anhvuduc/hcm'
     # 'binhduong': 'users/anhvuduc/binhduong' # (Optional: Uncomment nếu cần)
 }
 
@@ -89,20 +89,14 @@ SATELLITE_CONFIG = {
 
     # --- NHÓM CHỈ SỐ THỰC VẬT (VEGETATION INDICES) ---
 
-    # MODIS Vegetation Indices (16-day, 500m)
-    'MYD13A1': {
-        'id': 'MODIS/061/MYD13A1',
-        'type': 'VI',
-        'data_bands': ['NDVI', 'EVI', 'ViewZenith', 'SolarZenith', 'RelativeAzimuth'],
-        'qc_band': 'DetailedQA', # Lưu ý: MODIS dùng DetailedQA
-        'scale': 1000 #
-    },
-    'MOD13A1': {
-        'id': 'MODIS/061/MOD13A1',
+    # MODIS Vegetation Indices (Combined Terra/Aqua 16-day)
+    'MXD13A1': {
+        'id': ['MODIS/061/MOD13A1', 'MODIS/061/MYD13A1'], # List ID để merge
         'type': 'VI',
         'data_bands': ['NDVI', 'EVI', 'ViewZenith', 'SolarZenith', 'RelativeAzimuth'],
         'qc_band': 'DetailedQA',
-        'scale': 1000 #
+        'scale': 1000,
+        'product_name': 'MXD13A1' # Tên định danh cho file output
     },
 
     # VIIRS Vegetation Indices (16-day, 500m)
