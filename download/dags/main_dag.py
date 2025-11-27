@@ -120,7 +120,7 @@ def task_export_unified(**kwargs):
                     break
                 
                 # Gọi hàm export
-                task_id = export_single_period(
+                task_id = export_to_bucket(
                     city_name=city_name,
                     roi=roi,
                     collection_info=sat_config,

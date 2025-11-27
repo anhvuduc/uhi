@@ -9,20 +9,28 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
-    # Mount Google Cloud Credentials
+
+    # --- CẤU HÌNH DỰ ÁN ---
+    # 1. Đường dẫn key Service Account (được mount vào container)
     GOOGLE_APPLICATION_CREDENTIALS: /opt/airflow/config/service_account.json
-    # Custom Env for Project
-    DATA_DIR: /opt/airflow/data_local
+
+    # 2. Đường dẫn thư mục lưu dữ liệu tải về
+    DATA_DIR: /opt/airflow/data
+
+    # 3. [MỚI] Thêm đường dẫn gốc vào Python Path để fix lỗi import module 'config'
     PYTHONPATH: /opt/airflow
+
   volumes:
+    # 1. Code & Config (Quan trọng nhất)
     - ./dags:/opt/airflow/dags
-    - ./src:/opt/airflow/dags/src # Mount src vào dags/src để dễ import
     - ./config:/opt/airflow/config
-    - ./logs:/opt/airflow/logs
-    - ./plugins:/opt/airflow/plugins
-    # Mount thư mục data local (nếu cần test download về máy host)
-    # Tạo thư mục download storage ngang hàng với download/ nếu chưa có
-    - ../storage:/opt/airflow/data
+    - ./src:/opt/airflow/src # <--- ĐỪNG QUÊN DÒNG NÀY
+
+    # 2. Dữ liệu & Logs (Lưu ra ngoài container)
+    - ../mount/logs:/opt/airflow/logs
+    - ../mount/plugins:/opt/airflow/plugins
+    - ../mount/data:/opt/airflow/data
+
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on
     postgres:
@@ -76,7 +84,6 @@ services:
   airflow-init:
     <<: *airflow-common
     entrypoint: /bin/bash
-    # Script khởi tạo DB và User Admin
     command:
       - -c
       - |
@@ -89,8 +96,8 @@ services:
           echo "  echo -e \"AIRFLOW_UID=$$(id -u)\" > .env"
           echo
         fi
-        mkdir -p /sources/logs /sources/dags /sources/plugins
-        chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+        mkdir -p /opt/airflow/logs /opt/airflow/dags /opt/airflow/plugins /opt/airflow/data
+        chown -R "${AIRFLOW_UID}:0" /opt/airflow/{logs,dags,plugins,data}
         exec /entrypoint airflow version
     environment:
       <<: *airflow-common-env
@@ -99,8 +106,8 @@ services:
       _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
       _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
     user: "0:0"
-    volumes:
-      - .:/sources
+    # volumes:
+    #   - .:/sources # REMOVED: No longer needed, using shared volumes defined in *airflow-common
 
 volumes:
   postgres-db-volume:
