@@ -7,7 +7,7 @@ from config.config import SERVICE_ACCOUNT_FILE
 from src.filters.lst_filters import apply_mask_lst_modis, apply_mask_lst_viirs
 from src.filters.vi_filters import apply_mask_ndvi
 
-def export_single_period(
+def export_to_bucket(
     city_name,
     roi,
     collection_info,

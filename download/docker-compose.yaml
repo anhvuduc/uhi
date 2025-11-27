@@ -1,10 +1,8 @@
 version: '3.8'
 
-x-airflow-common:
-  &airflow-common
+x-airflow-common: &airflow-common
   build: .
-  environment:
-    &airflow-common-env
+  environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CORE__FERNET_KEY: ''
@@ -14,7 +12,7 @@ x-airflow-common:
     # Mount Google Cloud Credentials
     GOOGLE_APPLICATION_CREDENTIALS: /opt/airflow/config/service_account.json
     # Custom Env for Project
-    DATA_DIR: /opt/airflow/data_local
+    DATA_DIR: /opt/airflow/data
   volumes:
     - ./dags:/opt/airflow/dags
     - ./src:/opt/airflow/dags/src # Mount src vào dags/src để dễ import
@@ -22,11 +20,10 @@ x-airflow-common:
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
     # Mount thư mục data local (nếu cần test download về máy host)
-    # Tạo thư mục data_storage ngang hàng với download/ nếu chưa có
-    - ../data_storage:/opt/airflow/data_local
+    # Tạo thư mục download storage ngang hàng với download/ nếu chưa có
+    - ../storage:/opt/airflow/data
   user: "${AIRFLOW_UID:-50000}:0"
-  depends_on:
-    &airflow-common-depends-on
+  depends_on: &airflow-common-depends-on
     postgres:
       condition: service_healthy
 
@@ -40,7 +37,7 @@ services:
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "airflow"]
+      test: [ "CMD", "pg_isready", "-U", "airflow" ]
       interval: 5s
       retries: 5
     restart: always
@@ -51,7 +48,7 @@ services:
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -65,7 +62,7 @@ services:
     <<: *airflow-common
     command: scheduler
     healthcheck:
-      test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
+      test: [ "CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"' ]
       interval: 10s
       timeout: 10s
       retries: 5
