@@ -1,0 +1,27 @@
+# Credentials & Secrets
+service_account.json
+*.pem
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+
+# Airflow
+logs/
+airflow.cfg
+airflow.db
+unittests.cfg
+webserver_config.py
+
+# OS
+.DS_Store
+.idea/
+.vscode/
+
+# Docker
+docker-context-files/
