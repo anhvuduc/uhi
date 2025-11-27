@@ -35,7 +35,7 @@ default_args = {
 }
 
 dag = DAG(
-    'unified_gee_pipeline',
+    'gee_pipeline',
     default_args=default_args,
     description='Pipeline tối ưu: Sensor -> Export (Multi-Mode) -> Wait -> Download',
     schedule_interval='0 2 5 * *', # Mặc định chạy 2h sáng ngày 5 hàng tháng (cho mode monthly)
