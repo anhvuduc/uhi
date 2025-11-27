@@ -20,6 +20,7 @@ webserver_config.py
 
 # OS
 .DS_Store
+../.DS_Store    
 .idea/
 .vscode/
 
