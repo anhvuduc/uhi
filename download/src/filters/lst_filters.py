@@ -1,7 +1,7 @@
 import ee
 from .common import bitwise_extract
 
-def apply_mask_modis_lst(image, data_bands, qc_band):
+def apply_mask_lst_modis(image, data_bands, qc_band):
     """
     Áp dụng mask chất lượng (QC) cho dữ liệu MODIS LST (MOD21A1D/MYD21A1D).
     
@@ -76,7 +76,7 @@ def apply_mask_modis_lst(image, data_bands, qc_band):
     return ee.Image.cat(scaled_bands).copyProperties(image, image.propertyNames())
 
 
-def apply_mask_viirs_lst(image, data_bands, qc_band):
+def apply_mask_lst_viirs(image, data_bands, qc_band):
     """
     Áp dụng mask chất lượng (QC) cho dữ liệu VIIRS LST (VNP21A1D/VNP21A1N).
     

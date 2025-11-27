@@ -12,7 +12,8 @@ x-airflow-common: &airflow-common
     # Mount Google Cloud Credentials
     GOOGLE_APPLICATION_CREDENTIALS: /opt/airflow/config/service_account.json
     # Custom Env for Project
-    DATA_DIR: /opt/airflow/data
+    DATA_DIR: /opt/airflow/data_local
+    PYTHONPATH: /opt/airflow
   volumes:
     - ./dags:/opt/airflow/dags
     - ./src:/opt/airflow/dags/src # Mount src vào dags/src để dễ import
