@@ -5,6 +5,7 @@ from airflow.models.param import Param
 from datetime import datetime, timedelta
 import sys
 import os
+import time
 
 # Thêm đường dẫn src và config vào sys.path
 airflow_home = os.environ.get('AIRFLOW_HOME', '/opt/airflow')
@@ -15,7 +16,7 @@ from src.utils.gee_quota import check_gee_quota
 from src.utils.gee_coordinator import wait_for_tasks
 from src.utils.gcs_scan import check_bucket
 from src.utils.gee_utils import get_date_range, get_satellite_dates
-from src.process.gee_export import export_single_period
+from src.process.gee_export import export_to_bucket
 from src.process.file_download import run_download_pipeline
 from src.auth import initialize_gee
 from config.config import ROIS, SATELLITE_CONFIG, GCS_CONFIG
@@ -63,7 +64,7 @@ def sensor_check_quota(**kwargs):
     print(f"✅ [SENSOR] Hệ thống rảnh ({count} tasks). Tiếp tục.")
     return True
 
-def task_export_unified(**kwargs):
+def task_export(**kwargs):
     """
     Task Export: Xử lý logic theo Mode -> Quét GCS -> Gửi lệnh Export.
     """
@@ -81,6 +82,40 @@ def task_export_unified(**kwargs):
     existing_files = check_bucket(bucket_name, base_folder)
     
     submitted_tasks = []
+
+    # --------------------------------------------------------------------------
+    # BƯỚC 2.5: TÍNH TOÁN TỔNG SỐ TASK (DRY RUN)
+    # --------------------------------------------------------------------------
+    total_estimated_tasks = 0
+    print("🔄 [ESTIMATE] Đang tính toán tổng số task dự kiến...")
+
+    for city_name, roi_path in ROIS.items():
+        for sat_key, sat_config in SATELLITE_CONFIG.items():
+            # Logic lấy ngày y hệt như bên dưới
+            s_date, e_date = get_date_range(mode, params)
+            if mode == 'historical':
+                s_date, e_date = get_satellite_dates(sat_config['id'])
+            
+            start_dt = datetime.strptime(s_date, '%Y-%m-%d')
+            end_dt = datetime.strptime(e_date, '%Y-%m-%d')
+            current_dt = start_dt
+            
+            while current_dt < end_dt:
+                next_month = current_dt + timedelta(days=32)
+                next_month = next_month.replace(day=1)
+                chunk_end_dt = min(next_month, end_dt)
+                
+                chunk_start_str = current_dt.strftime('%Y-%m-%d')
+                chunk_end_str = chunk_end_dt.strftime('%Y-%m-%d')
+                
+                if chunk_start_str == chunk_end_str:
+                    break
+                
+                total_estimated_tasks += 1
+                current_dt = chunk_end_dt
+
+    print(f"📊 [ESTIMATE] TỔNG SỐ TASK DỰ KIẾN: {total_estimated_tasks}")
+    # --------------------------------------------------------------------------
     
     # 3. Duyệt qua từng ROI và Vệ tinh
     for city_name, roi_path in ROIS.items():
@@ -119,6 +154,15 @@ def task_export_unified(**kwargs):
                 if chunk_start_str == chunk_end_str:
                     break
                 
+                # --- BATCHING LOGIC (Manual Limit) ---
+                while True:
+                    current_tasks = check_gee_quota()
+                    if current_tasks < 2999:
+                        break # Safe to submit
+                    print(f"⏳ [QUOTA FULL] {current_tasks}/3000 tasks running. Waiting 1 hour...")
+                    time.sleep(3600) # Wait 1 hour
+                # -------------------------------------
+
                 # Gọi hàm export
                 task_id = export_to_bucket(
                     city_name=city_name,
@@ -146,7 +190,7 @@ def task_wait_completion(**kwargs):
     Task Wait: Chờ task hoàn thành.
     """
     ti = kwargs['ti']
-    submitted_tasks = ti.xcom_pull(task_ids='export_unified')
+    submitted_tasks = ti.xcom_pull(task_ids='export')
     wait_for_tasks(submitted_tasks)
 
 def task_download_local(**kwargs):
@@ -169,9 +213,8 @@ with dag:
     )
     
     export = PythonOperator(
-        task_id='export_unified',
-        python_callable=task_export_unified,
-        pool='gee_api_pool',
+        task_id='gee_export',
+        python_callable=task_export,
     )
     
     wait = PythonOperator(
