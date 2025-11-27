@@ -53,13 +53,17 @@ def get_date_range(mode, params=None):
     today = datetime.now()
     
     if mode == 'yearly':
+        # Nếu có params, dùng params (Custom Yearly)
+        if params and 'start_date' in params and 'end_date' in params:
+            return params['start_date'], params['end_date']
+            
         # Mặc định: Chạy cho năm ngoái
         last_year = today.year - 1
         start_date = f"{last_year}-01-01"
         end_date = f"{last_year+1}-01-01"
         return start_date, end_date
         
-    elif mode == 'custom':
+    elif mode == 'monthly':
         # Lấy từ params
         if params and 'start_date' in params and 'end_date' in params:
             return params['start_date'], params['end_date']
@@ -73,10 +77,15 @@ def get_date_range(mode, params=None):
         
     return None, None
 
-def generate_date_chunks(start_date, end_date):
+def generate_date_chunks(start_date, end_date, interval='monthly'):
     """
-    Generator chia nhỏ khoảng thời gian thành các chunk (mặc định theo tháng).
+    Generator chia nhỏ khoảng thời gian thành các chunk.
     Giúp đồng bộ logic giữa bước Estimate và Execution.
+    
+    Args:
+        start_date (str): 'YYYY-MM-DD'
+        end_date (str): 'YYYY-MM-DD'
+        interval (str): 'monthly' hoặc 'yearly'
     
     Yields:
         tuple: (chunk_start_str, chunk_end_str)
@@ -86,11 +95,19 @@ def generate_date_chunks(start_date, end_date):
     current_dt = start_dt
     
     while current_dt < end_dt:
-        # Logic: Lấy ngày đầu tháng sau
-        next_month = current_dt + timedelta(days=32)
-        next_month = next_month.replace(day=1)
+        if interval == 'yearly':
+            # Next year: 1st Jan of next year
+            # Logic: Nếu đang là 2020-05-01 -> Next là 2021-01-01
+            # Nếu đang là 2020-01-01 -> Next là 2021-01-01
+            next_dt = current_dt.replace(year=current_dt.year + 1, month=1, day=1)
+        else:
+            # Logic cũ: Lấy ngày đầu tháng sau
+            next_month = current_dt + timedelta(days=32)
+            next_dt = next_month.replace(day=1)
         
-        chunk_end_dt = min(next_month, end_dt)
+        chunk_end_dt = min(next_dt, end_dt)
+        
+
         
         chunk_start_str = current_dt.strftime('%Y-%m-%d')
         chunk_end_str = chunk_end_dt.strftime('%Y-%m-%d')

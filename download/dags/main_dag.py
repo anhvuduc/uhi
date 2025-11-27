@@ -43,9 +43,9 @@ dag = DAG(
     catchup=False,
     tags=['gee', 'unified', 'optimized', 'v2'],
     params={
-        'mode': Param('custom', enum=['yearly', 'historical', 'custom'], description="Chế độ chạy"),
-        'start_date': Param('2023-01-01', type='string', format='date', description="Ngày bắt đầu (cho mode custom)"),
-        'end_date': Param('2023-01-31', type='string', format='date', description="Ngày kết thúc (cho mode custom)"),
+        'mode': Param('monthly', enum=['yearly', 'historical', 'monthly'], description="Chế độ chạy"),
+        'start_date': Param('2023-01-01', type='string', format='date', description="Ngày bắt đầu (cho mode monthly/yearly)"),
+        'end_date': Param('2023-01-31', type='string', format='date', description="Ngày kết thúc (cho mode monthly/yearly)"),
     }
 )
 
@@ -70,7 +70,7 @@ def task_export(**kwargs):
     """
     # 1. Lấy Params & Mode
     params = kwargs['params']
-    mode = params.get('mode', 'custom')
+    mode = params.get('mode', 'monthly')
     print(f"🚀 [START] Bắt đầu Export với chế độ: {mode.upper()}")
     
     initialize_gee()
@@ -88,6 +88,10 @@ def task_export(**kwargs):
     # --------------------------------------------------------------------------
     total_estimated_tasks = 0
     print("🔄 [ESTIMATE] Đang tính toán tổng số task dự kiến...")
+    
+    # Xác định Interval dựa trên Mode
+    interval = 'yearly' if mode == 'yearly' else 'monthly'
+    print(f"ℹ️ [INFO] Chế độ gộp (Composite Interval): {interval.upper()}")
 
     for city_name, roi_path in ROIS.items():
         for sat_key, sat_config in SATELLITE_CONFIG.items():
@@ -97,7 +101,7 @@ def task_export(**kwargs):
                 s_date, e_date = get_satellite_dates(sat_config['id'])
             
             # Sử dụng generator chung
-            for _, _ in generate_date_chunks(s_date, e_date):
+            for _, _ in generate_date_chunks(s_date, e_date, interval=interval):
                 total_estimated_tasks += 1
 
     print(f"📊 [ESTIMATE] TỔNG SỐ TASK DỰ KIẾN: {total_estimated_tasks}")
@@ -117,18 +121,17 @@ def task_export(**kwargs):
                 s_date, e_date = get_satellite_dates(sat_config['id'])
                 print(f"  ℹ️ [HISTORICAL] {sat_key}: {s_date} -> {e_date}")
             
-            # Chuyển đổi string sang datetime để loop (nếu cần chia nhỏ)
-            # Ở đây ta sẽ chia nhỏ theo THÁNG để tránh task quá lớn (Best Practice GEE)
             # 5. Loop qua từng chunk thời gian (sử dụng generator chung)
-            for chunk_start_str, chunk_end_str in generate_date_chunks(s_date, e_date):
+            for chunk_start_str, chunk_end_str in generate_date_chunks(s_date, e_date, interval=interval):
                 
-                # --- BATCHING LOGIC (Manual Limit) ---
+                # --- BATCHING LOGIC (Optimized for High Throughput) ---
                 while True:
                     current_tasks = check_gee_quota()
-                    if current_tasks < 2999:
+                    # Giữ hàng đợi ở mức ~2800 để tối đa hóa tốc độ mà vẫn an toàn
+                    if current_tasks < 2800:
                         break # Safe to submit
-                    print(f"⏳ [QUOTA FULL] {current_tasks}/3000 tasks running. Waiting 1 hour...")
-                    time.sleep(3600) # Wait 1 hour
+                    print(f"⏳ [QUOTA FULL] {current_tasks}/3000 tasks running. Waiting 5 minute...")
+                    time.sleep(300) # Wait 5 minute (Fast retry)
                 # -------------------------------------
 
                 # Gọi hàm export
