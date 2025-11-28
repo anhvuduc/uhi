@@ -1,6 +1,7 @@
 import ee
 import os
-# from google.cloud import storage # Không cần nữa vì check qua Set
+from datetime import datetime, timezone, timedelta
+from google.cloud import storage
 from config.config import SERVICE_ACCOUNT_FILE
 
 # Import các bộ lọc
@@ -15,7 +16,8 @@ def export_to_bucket(
     end_date,
     bucket_name,
     base_folder_in_bucket,
-    existing_files=None # <--- Thêm tham số này (Set)
+    base_folder_in_bucket,
+    existing_files=None, # <--- Thêm tham số này (Set)
 ):
     """
     Hàm xử lý và xuất 1 ảnh duy nhất cho 1 khoảng thời gian xác định.
@@ -48,12 +50,60 @@ def export_to_bucket(
     full_blob_name = f"{gcs_path}.tif"
 
     # -----------------------------------------------------------
-    # [QUAN TRỌNG] BƯỚC KIỂM TRA TỒN TẠI (OPTIMIZED)
+    # [QUAN TRỌNG] BƯỚC KIỂM TRA TỒN TẠI (ACTUAL DATE LOGIC)
     # -----------------------------------------------------------
-    # Kiểm tra trong Set (O(1)) thay vì gọi API (O(N))
+    # 1. Kiểm tra file "Mục tiêu" (Full Range)
+    # Ví dụ: ..._20231101_20231130_mean.tif
     if full_blob_name in existing_files:
-        print(f"  ⚡ [SKIP] File đã tồn tại: {full_blob_name}")
+        print(f"  ⚡ [SKIP] File đầy đủ đã tồn tại: {full_blob_name}")
+        
+        # --- CLEANUP LOGIC ---
+        # Tìm và xóa các file partial cũ (VD: ..._25)
+        # prefix_pattern VD: .../Hanoi_MOD13Q1_20231101_
+        # gcs_path VD: raw_data/hanoi/MOD13Q1/Hanoi_MOD13Q1_20231101_20231130_mean
+        # Chúng ta cần lấy phần prefix chung: raw_data/hanoi/MOD13Q1/Hanoi_MOD13Q1_20231101_
+        
+        # Cách an toàn: Lấy tên file base (không có đuôi .tif)
+        base_name_no_ext = gcs_path.split('/')[-1] # Hanoi_MOD13Q1_20231101_20231130_mean
+        parts = base_name_no_ext.split('_')
+        # parts: ['Hanoi', 'MOD13Q1', '20231101', '20231130', 'mean']
+        
+        # Reconstruct prefix: Hanoi_MOD13Q1_20231101_
+        # Lưu ý: parts[:-2] sẽ lấy đến 20231101.
+        # Cần ghép lại cẩn thận.
+        
+        # Cách đơn giản hơn: Cắt chuỗi từ gcs_path
+        # Tìm vị trí của start_date trong chuỗi
+        s_date_str = start_date.replace('-', '')
+        try:
+            # Tìm index của start_date
+            idx = gcs_path.rfind(s_date_str)
+            if idx != -1:
+                # Prefix là từ đầu đến hết start_date + '_'
+                # VD: .../Hanoi_MOD13Q1_20231101_
+                cleanup_prefix = gcs_path[:idx + len(s_date_str) + 1]
+                
+                # Duyệt qua danh sách file hiện có để tìm file thừa
+                for existing in list(existing_files):
+                    # Chỉ xét các file .tif và bắt đầu bằng prefix này
+                    if existing.startswith(cleanup_prefix) and existing.endswith('.tif') and existing != full_blob_name:
+                        print(f"  🧹 [CLEANUP] Phát hiện file thừa (Partial): {existing}. Đang xóa...")
+                        try:
+                            client = storage.Client.from_service_account_json(SERVICE_ACCOUNT_FILE)
+                            bucket = client.bucket(bucket_name)
+                            blob = bucket.blob(existing)
+                            blob.delete()
+                            print(f"    ✅ Đã xóa: {existing}")
+                        except Exception as e:
+                            print(f"    ❌ Lỗi khi xóa {existing}: {e}")
+        except Exception as e:
+            print(f"  ⚠️ [WARN] Lỗi logic cleanup: {e}")
+        # ---------------------
+        
         return "SKIPPED"
+    
+    # 2. Nếu chưa có file Full, chuẩn bị query GEE để lấy ngày thực tế
+    # (Logic này sẽ được thực hiện bên dưới, sau khi tạo ImageCollection)
     # -----------------------------------------------------------
 
     # 2. Lấy thông tin cấu hình xử lý ảnh
@@ -100,14 +150,51 @@ def export_to_bucket(
             print(f"  [SKIP] Không có ảnh nào từ {start_date} đến {end_date} cho {city_name}")
             return None
 
+        # --- ACTUAL DATE LOGIC ---
+        # Lấy ngày cuối cùng thực tế có dữ liệu trong khoảng thời gian này
+        # Ví dụ: Yêu cầu đến 30/11 nhưng dữ liệu mới có đến 25/11
+        actual_last_img = col.sort('system:time_start', False).first()
+        actual_end_date_ms = actual_last_img.get('system:time_start').getInfo()
+        actual_end_date = datetime.fromtimestamp(actual_end_date_ms / 1000).strftime('%Y-%m-%d')
+        
+        # [NEW] Rounding Logic (Align with User Convention)
+        # Nếu ngày thực tế gần với ngày yêu cầu (cách < 2 ngày) -> Dùng ngày yêu cầu (Full Month)
+        # VD: Actual = 31/01, Requested = 01/02 -> Diff = 1 day -> Use 01/02
+        actual_end_dt = datetime.strptime(actual_end_date, '%Y-%m-%d')
+        requested_end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+        
+        # [STRICT] Chỉ làm tròn nếu dữ liệu thực sự chạm đến ngày cuối cùng của tháng (cách 1 ngày so với ngày 1 tháng sau)
+        # VD: Actual = 30/11, Requested = 01/12 -> Diff = 1 day -> Round UP (Full)
+        # VD: Actual = 29/11, Requested = 01/12 -> Diff = 2 days -> Keep Actual (Partial)
+        if (requested_end_dt - actual_end_dt).days <= 1:
+             final_end_date_str = end_date # Dùng ngày yêu cầu (VD: 20250901)
+             print(f"  ℹ️ [INFO] Data is complete ({actual_end_date}). Using requested end date: {end_date}")
+        else:
+             final_end_date_str = actual_end_date # Dùng ngày thực tế (VD: 20250825)
+             print(f"  ⚠️ [INFO] Data is partial. Actual end: {actual_end_date} (Requested: {end_date})")
+
+        # Tạo tên file thực tế
+        a_e_date = final_end_date_str.replace('-', '')
+        actual_filename = f"{city_name}_{product_short_name}_{s_date}_{a_e_date}_mean"
+        actual_gcs_path = f"{base_folder_in_bucket}/{city_name}/{product_short_name}/{actual_filename}"
+        actual_full_blob_name = f"{actual_gcs_path}.tif"
+        
+        # Kiểm tra lại: Nếu file thực tế này đã có rồi -> Skip
+        if actual_full_blob_name in existing_files:
+             print(f"  ⚡ [SKIP] File thực tế đã tồn tại: {actual_full_blob_name}")
+             return "SKIPPED"
+             
+        print(f"  ℹ️ [INFO] Exporting Range: {start_date} -> {final_end_date_str}")
+        # -------------------------
+
         processed_img = col.map(apply_filters).mean()
         final_image = processed_img.clip(roi)
         
         task = ee.batch.Export.image.toCloudStorage(
             image=final_image,
-            description=filename,
+            description=actual_filename, # Dùng tên file thực tế
             bucket=bucket_name,
-            fileNamePrefix=gcs_path,
+            fileNamePrefix=actual_gcs_path, # Dùng đường dẫn thực tế
             region=roi.geometry(),
             scale=scale,
             crs='EPSG:4326',

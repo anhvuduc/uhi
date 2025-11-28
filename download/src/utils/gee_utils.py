@@ -39,13 +39,14 @@ def get_satellite_dates(collection_id):
     # Fallback nếu lỗi (hoặc trả về None để xử lý sau)
     return '2000-01-01', datetime.now().strftime('%Y-%m-%d')
 
-def get_date_range(mode, params=None):
+def get_date_range(mode, params=None, run_type='manual'):
     """
     Tính toán start_date và end_date dựa trên Mode chạy.
     
     Args:
-        mode (str): 'yearly', 'historical', 'custom'
+        mode (str): 'yearly', 'historical', 'monthly'
         params (dict): Các tham số từ Airflow (dag_run.conf)
+        run_type (str): 'manual' hoặc 'scheduled'
         
     Returns:
         tuple: (start_date, end_date) dạng 'YYYY-MM-DD'
@@ -64,11 +65,21 @@ def get_date_range(mode, params=None):
         return start_date, end_date
         
     elif mode == 'monthly':
-        # Lấy từ params
+            # 1. Nếu là Scheduled Run (Chạy tự động): Lấy tháng trước
+        if run_type == 'scheduled':
+            first_day_current_month = today.replace(day=1)
+            last_day_prev_month = first_day_current_month - timedelta(days=1)
+            first_day_prev_month = last_day_prev_month.replace(day=1)
+            
+            # [FIX] End Date phải là ngày đầu tháng sau (Exclusive) để khớp với GEE filter và Filename Convention
+            # VD: Muốn lấy dữ liệu tháng 8 -> Start: 08-01, End: 09-01
+            return first_day_prev_month.strftime('%Y-%m-%d'), first_day_current_month.strftime('%Y-%m-%d')
+
+        # 2. Nếu là Manual Run: Lấy từ params
         if params and 'start_date' in params and 'end_date' in params:
             return params['start_date'], params['end_date']
         else:
-            # Fallback nếu không nhập
+            # Fallback
             return today.strftime('%Y-%m-%d'), today.strftime('%Y-%m-%d')
             
     elif mode == 'historical':
