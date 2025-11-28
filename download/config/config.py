@@ -28,8 +28,8 @@ LOCAL_DATA_DIR = os.getenv('DATA_DIR', '/opt/data')
 ROIS = {
     'hanoi': 'users/anhvuduc/hanoi',
     'haiphong': 'users/anhvuduc/haiphong_blv',
-    # 'danang': 'users/anhvuduc/dn_hs',
-    # 'hcm': 'users/anhvuduc/hcm'
+    'danang': 'users/anhvuduc/dn_hs',
+    'hcm': 'users/anhvuduc/hcm'
     # 'binhduong': 'users/anhvuduc/binhduong' # (Optional: Uncomment nếu cần)
 }
 
