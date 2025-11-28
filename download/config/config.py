@@ -27,9 +27,9 @@ LOCAL_DATA_DIR = os.getenv('DATA_DIR', '/opt/data')
 # Mapping: Tên thành phố (viết thường) -> Asset ID trên GEE
 ROIS = {
     'hanoi': 'users/anhvuduc/hanoi',
-    # 'haiphong': 'users/anhvuduc/haiphong_blv',
+    'haiphong': 'users/anhvuduc/haiphong_blv',
     # 'danang': 'users/anhvuduc/dn_hs',
-    'hcm': 'users/anhvuduc/hcm'
+    # 'hcm': 'users/anhvuduc/hcm'
     # 'binhduong': 'users/anhvuduc/binhduong' # (Optional: Uncomment nếu cần)
 }
 
