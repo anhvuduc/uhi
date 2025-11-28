@@ -58,7 +58,7 @@ def sensor_check_quota(**kwargs):
     Sensor: Kiểm tra Quota GEE.
     """
     count = check_gee_quota()
-    if count > 2500:
+    if count > 2800:
         print(f"⚠️ [SENSOR] Quá tải ({count} tasks). Chờ 10 phút...")
         return False
     print(f"✅ [SENSOR] Hệ thống rảnh ({count} tasks). Tiếp tục.")
