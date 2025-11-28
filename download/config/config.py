@@ -19,7 +19,7 @@ SERVICE_ACCOUNT_FILE = os.getenv(
 EE_PROJECT_ID = 'ee-docxducanh'
 
 # Thư mục lưu dữ liệu tải về (Mapped Volume từ ổ D:/Data_RemoteSensing)
-LOCAL_DATA_DIR = os.getenv('DATA_DIR', '/opt/data_storage')
+LOCAL_DATA_DIR = os.getenv('DATA_DIR', '/opt/data')
 
 # ========================================================
 # 2. KHU VỰC NGHIÊN CỨU (REGIONS OF INTEREST - ROIs)
@@ -29,7 +29,7 @@ ROIS = {
     'hanoi': 'users/anhvuduc/hanoi',
     # 'haiphong': 'users/anhvuduc/haiphong_blv',
     # 'danang': 'users/anhvuduc/dn_hs',
-    # 'hcm': 'users/anhvuduc/hcm'
+    'hcm': 'users/anhvuduc/hcm'
     # 'binhduong': 'users/anhvuduc/binhduong' # (Optional: Uncomment nếu cần)
 }
 
