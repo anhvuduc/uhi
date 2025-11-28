@@ -42,7 +42,10 @@ def run_download_pipeline():
         
         # 2. Quét file trên Cloud
         print("--- 1. Scanning Cloud Storage... ---")
-        blobs = storage_client.list_blobs(bucket_name, prefix=base_folder)
+        blobs = list(storage_client.list_blobs(bucket_name, prefix=base_folder))
+        
+        # Tạo set chứa các file trên Cloud để tra cứu nhanh (Mirror Sync)
+        cloud_files = {blob.name for blob in blobs if not blob.name.endswith("/")}
         
         download_queue = []
         
@@ -60,9 +63,38 @@ def run_download_pipeline():
                 download_queue.append((blob.name, local_path))
                 
         print(f"  > Tìm thấy {len(download_queue)} file mới cần tải.")
+
+        # --- [NEW] CLEANUP LOCAL GARBAGE (Mirror Sync) ---
+        # Xóa các file ở local không còn tồn tại trên Cloud (VD: File partial cũ)
+        print("--- 2. Cleaning up Local Garbage... ---")
+        local_base_abs = os.path.join(LOCAL_DATA_DIR, base_folder)
+        
+        if os.path.exists(local_base_abs):
+            for root, dirs, files in os.walk(local_base_abs):
+                for file in files:
+                    if file.startswith("."): continue # Bỏ qua file ẩn (.DS_Store)
+                    
+                    abs_path = os.path.join(root, file)
+                    # Tính relative path tương ứng với blob name (VD: raw/hanoi/...)
+                    # rel_path_from_base = os.path.relpath(abs_path, local_base_abs) 
+                    # -> trả về hanoi/..., thiếu 'raw/' đầu
+                    
+                    # Tính relative từ LOCAL_DATA_DIR để khớp với blob.name
+                    rel_path_full = os.path.relpath(abs_path, LOCAL_DATA_DIR)
+                    
+                    # Chuẩn hóa separator về '/' (cho Windows compatibility)
+                    rel_path_normalized = rel_path_full.replace(os.sep, '/')
+                    
+                    if rel_path_normalized not in cloud_files:
+                        print(f"  🧹 [CLEANUP] File thừa ở local (đã xóa trên Cloud): {rel_path_normalized}")
+                        try:
+                            os.remove(abs_path)
+                        except Exception as e:
+                            print(f"    ❌ Không thể xóa: {e}")
+        # -------------------------------------------------
         
         if not download_queue:
-            print("🎉 [DONE] Dữ liệu đã đồng bộ hoàn toàn. Không cần tải thêm.")
+            print("🎉 [DONE] Dữ liệu đã đồng bộ hoàn toàn (Upload & Cleanup). Không cần tải thêm.")
             return
 
         # 4. Tải song song (Multi-threading)
