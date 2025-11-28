@@ -69,9 +69,16 @@ def task_export(**kwargs):
     Task Export: Xử lý logic theo Mode -> Quét GCS -> Gửi lệnh Export.
     """
     # 1. Lấy Params & Mode
+    # 1. Lấy Params & Mode
     params = kwargs['params']
+    dag_run = kwargs.get('dag_run')
+    
+    # Xác định kiểu chạy (Scheduled hay Manual)
+    # Nếu là scheduled -> run_type='scheduled' -> get_date_range sẽ lấy tháng trước
+    run_type_str = 'scheduled' if dag_run and dag_run.run_type == 'scheduled' else 'manual'
+    
     mode = params.get('mode', 'monthly')
-    print(f"🚀 [START] Bắt đầu Export với chế độ: {mode.upper()}")
+    print(f"🚀 [START] Bắt đầu Export với chế độ: {mode.upper()} (Run Type: {run_type_str})")
     
     initialize_gee()
     
@@ -99,7 +106,7 @@ def task_export(**kwargs):
     for city_name, roi_path in ROIS.items():
         for sat_key, sat_config in SATELLITE_CONFIG.items():
             # Logic lấy ngày y hệt như bên dưới
-            s_date, e_date = get_date_range(mode, params)
+            s_date, e_date = get_date_range(mode, params, run_type=run_type_str)
             if mode == 'historical':
                 s_date, e_date = get_satellite_dates(sat_config['id'])
             
@@ -117,7 +124,7 @@ def task_export(**kwargs):
         for sat_key, sat_config in SATELLITE_CONFIG.items():
             
             # 4. Xác định khoảng thời gian (Date Logic)
-            s_date, e_date = get_date_range(mode, params)
+            s_date, e_date = get_date_range(mode, params, run_type=run_type_str)
             
             # Xử lý đặc biệt cho mode HISTORICAL
             if mode == 'historical':
