@@ -16,7 +16,6 @@ def export_to_bucket(
     end_date,
     bucket_name,
     base_folder_in_bucket,
-    base_folder_in_bucket,
     existing_files=None, # <--- Thêm tham số này (Set)
 ):
     """
