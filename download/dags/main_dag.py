@@ -161,6 +161,17 @@ def task_wait_completion(**kwargs):
     submitted_tasks = ti.xcom_pull(task_ids='export')
     wait_for_tasks(submitted_tasks)
 
+    # [NEW] Chờ cho đến khi hệ thống GEE hoàn toàn rảnh (0 task running)
+    # Đảm bảo không còn task nào (kể cả của process khác) đang chạy trước khi download
+    print("⏳ [WAIT] Đang chờ hệ thống GEE xử lý hết toàn bộ task (Global Wait)...")
+    while True:
+        count = check_gee_quota()
+        if count == 0:
+            print("✅ [DONE] Hệ thống GEE đã sạch task (0 running). Chuyển sang Download.")
+            break
+        print(f"    ... Vẫn còn {count} task đang chạy trên GEE. Chờ 60s...")
+        time.sleep(60)
+
 def task_download_local(**kwargs):
     """
     Task Download: Tải file về máy.

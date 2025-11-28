@@ -96,7 +96,9 @@ SATELLITE_CONFIG = {
         'data_bands': ['NDVI', 'EVI', 'ViewZenith', 'SolarZenith', 'RelativeAzimuth'],
         'qc_band': 'DetailedQA',
         'scale': 1000,
-        'product_name': 'MXD13A1' # Tên định danh cho file output
+        'product_name': 'MXD13A1', # Tên định danh cho file output
+        'date_tolerance_days': 9, # VI 16-day product (Allow ~8-9 days gap)
+        'force_historical_full': True # Force full month for past months
     },
 
     # VIIRS Vegetation Indices (16-day, 500m)
@@ -108,7 +110,9 @@ SATELLITE_CONFIG = {
             'view_zenith_angle', 'sun_zenith_angle', 'relative_azimuth_angle', 'pixel_reliability'
         ],
         'qc_band': 'VI_Quality', # Lưu ý: VIIRS dùng VI_Quality
-        'scale': 1000 #
+        'scale': 1000, #
+        'date_tolerance_days': 9, # VI 16-day product
+        'force_historical_full': True # Force full month for past months
     }
 }
 

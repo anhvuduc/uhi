@@ -164,8 +164,19 @@ def export_to_bucket(
         
         # [STRICT] Chỉ làm tròn nếu dữ liệu thực sự chạm đến ngày cuối cùng của tháng (cách 1 ngày so với ngày 1 tháng sau)
         # VD: Actual = 30/11, Requested = 01/12 -> Diff = 1 day -> Round UP (Full)
-        # VD: Actual = 29/11, Requested = 01/12 -> Diff = 2 days -> Keep Actual (Partial)
-        if (requested_end_dt - actual_end_dt).days <= 1:
+        # Get tolerance from config, default to 1 day (for daily products)
+        tolerance_days = collection_info.get('date_tolerance_days', 1)
+        force_historical_full = collection_info.get('force_historical_full', False)
+        
+        # Check if the requested period is "historical" (strictly before the current month)
+        # We compare requested_end_dt with the start of the current month
+        current_month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        is_historical = requested_end_dt < current_month_start
+
+        if force_historical_full and is_historical:
+             final_end_date_str = end_date
+             print(f"  ℹ️ [INFO] Historical Month (Forced Full): Using requested end date {end_date}")
+        elif (requested_end_dt - actual_end_dt).days <= tolerance_days:
              final_end_date_str = end_date # Dùng ngày yêu cầu (VD: 20250901)
              print(f"  ℹ️ [INFO] Data is complete ({actual_end_date}). Using requested end date: {end_date}")
         else:
