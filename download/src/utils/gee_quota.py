@@ -26,3 +26,22 @@ def check_gee_quota():
         print(f"❌ [ERROR] Failed to check GEE quota: {e}")
         # Trả về 9999 để Sensor tự động sleep (an toàn)
         return 9999
+
+def get_pending_tasks():
+    """
+    Lấy danh sách tên (description) của các task đang chạy hoặc chờ trên GEE.
+    Dùng để tránh submit trùng task.
+    
+    Returns:
+        set: Tập hợp các description của task đang active.
+    """
+    try:
+        initialize_gee()
+        tasks = ee.data.getTaskList()
+        # Lọc các task đang chạy hoặc chờ
+        pending = {t['description'] for t in tasks if t['state'] in ['READY', 'RUNNING']}
+        print(f"📋 [INFO] Found {len(pending)} pending tasks on GEE.")
+        return pending
+    except Exception as e:
+        print(f"⚠️ [WARN] Could not fetch pending tasks: {e}")
+        return set()

@@ -12,7 +12,7 @@ airflow_home = os.environ.get('AIRFLOW_HOME', '/opt/airflow')
 sys.path.append(airflow_home) # Để import config (nếu config nằm ở /opt/airflow/config)
 sys.path.append(os.path.join(airflow_home, 'dags')) # Để import src (nếu src nằm ở /opt/airflow/dags/src)
 
-from src.utils.gee_quota import check_gee_quota
+from src.utils.gee_quota import check_gee_quota, get_pending_tasks
 from src.utils.gee_coordinator import wait_for_tasks
 from src.utils.gcs_scan import check_bucket
 from src.utils.gee_utils import get_date_range, get_satellite_dates, generate_date_chunks
@@ -81,6 +81,9 @@ def task_export(**kwargs):
     # 2. Scan Once (Tối ưu)
     existing_files = check_bucket(bucket_name, base_folder)
     
+    # [NEW] Get Pending Tasks (Tránh duplicate)
+    pending_tasks = get_pending_tasks()
+    
     submitted_tasks = []
 
     # --------------------------------------------------------------------------
@@ -143,7 +146,8 @@ def task_export(**kwargs):
                     end_date=chunk_end_str,
                     bucket_name=bucket_name,
                     base_folder_in_bucket=base_folder,
-                    existing_files=existing_files
+                    existing_files=existing_files,
+                    pending_tasks=pending_tasks # <--- Truyền danh sách pending
                 )
                 
                 if task_id and task_id != "SKIPPED":

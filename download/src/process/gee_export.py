@@ -17,12 +17,15 @@ def export_to_bucket(
     bucket_name,
     base_folder_in_bucket,
     existing_files=None, # <--- Thêm tham số này (Set)
+    pending_tasks=None   # <--- [NEW] Thêm tham số này (Set)
 ):
     """
     Hàm xử lý và xuất 1 ảnh duy nhất cho 1 khoảng thời gian xác định.
     """
     if existing_files is None:
         existing_files = set()
+    if pending_tasks is None:
+        pending_tasks = set()
 
     # 1. Cấu hình tên file và đường dẫn (Load)
     # 1. Cấu hình tên file và đường dẫn (Load)
@@ -99,6 +102,12 @@ def export_to_bucket(
             print(f"  ⚠️ [WARN] Lỗi logic cleanup: {e}")
         # ---------------------
         
+        return "SKIPPED"
+    
+    # [NEW] Check Pending Tasks (Full Month)
+    # Nếu task export file này đang chạy -> Skip
+    if filename in pending_tasks:
+        print(f"  ⏳ [PENDING] Task đang chạy trên GEE: {filename}")
         return "SKIPPED"
     
     # 2. Nếu chưa có file Full, chuẩn bị query GEE để lấy ngày thực tế
@@ -194,6 +203,11 @@ def export_to_bucket(
              print(f"  ⚡ [SKIP] File thực tế đã tồn tại: {actual_full_blob_name}")
              return "SKIPPED"
              
+        # [NEW] Check Pending Tasks (Actual File)
+        if actual_filename in pending_tasks:
+             print(f"  ⏳ [PENDING] Task thực tế đang chạy trên GEE: {actual_filename}")
+             return "SKIPPED"
+
         print(f"  ℹ️ [INFO] Exporting Range: {start_date} -> {final_end_date_str}")
         # -------------------------
 
