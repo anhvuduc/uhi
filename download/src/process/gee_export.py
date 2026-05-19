@@ -212,7 +212,8 @@ def export_to_bucket(
         # -------------------------
 
         processed_img = col.map(apply_filters).mean()
-        final_image = processed_img.clip(roi)
+        # final_image = processed_img.clip(roi) # Cắt sát theo đường viền shapefile (những vùng nằm ngoài viền sẽ thành NoData)
+        final_image = processed_img.clip(roi.geometry().bounds()) # Cắt theo hình chữ nhật (Bounding Box) bao quanh shapefile
         
         task = ee.batch.Export.image.toCloudStorage(
             image=final_image,
