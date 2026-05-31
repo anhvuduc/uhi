@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+# edit log 260512: add bands and change download folder
 # ========================================================
 # 1. CẤU HÌNH HỆ THỐNG & ĐƯỜNG DẪN (SYSTEM & PATHS)
 # ========================================================
@@ -45,28 +46,28 @@ SATELLITE_CONFIG = {
     'MYD21A1D': {
         'id': 'MODIS/061/MYD21A1D',
         'type': 'LST',
-        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle'],
+        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle', 'Emis_29', 'Emis_31', 'Emis_32'],
         'qc_band': 'QC',
         'scale': 1000
     },
     'MYD21A1N': {
         'id': 'MODIS/061/MYD21A1N',
         'type': 'LST',
-        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle'],
+        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle', 'Emis_29', 'Emis_31', 'Emis_32'],
         'qc_band': 'QC',
         'scale': 1000
     },
     'MOD21A1D': {
         'id': 'MODIS/061/MOD21A1D',
         'type': 'LST',
-        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle'],
+        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle', 'Emis_29', 'Emis_31', 'Emis_32'],
         'qc_band': 'QC',
         'scale': 1000
     },
     'MOD21A1N': {
         'id': 'MODIS/061/MOD21A1N',
         'type': 'LST',
-        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle'],
+        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle', 'Emis_29', 'Emis_31', 'Emis_32'],
         'qc_band': 'QC',
         'scale': 1000
     },
@@ -75,14 +76,14 @@ SATELLITE_CONFIG = {
     'VNP21A1D': {
         'id': 'NASA/VIIRS/002/VNP21A1D',
         'type': 'LST',
-        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle'],
+        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle', 'Emis_14', 'Emis_15', 'Emis_16'],
         'qc_band': 'QC', 
         'scale': 1000
     },
     'VNP21A1N': {
         'id': 'NASA/VIIRS/002/VNP21A1N',
         'type': 'LST',
-        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle'],
+        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle', 'Emis_14', 'Emis_15', 'Emis_16'],
         'qc_band': 'QC',
         'scale': 1000
     },
@@ -93,7 +94,7 @@ SATELLITE_CONFIG = {
     'MXD13A1': {
         'id': ['MODIS/061/MOD13A1', 'MODIS/061/MYD13A1'], # List ID để merge
         'type': 'VI',
-        'data_bands': ['NDVI', 'EVI', 'ViewZenith', 'SolarZenith', 'RelativeAzimuth'],
+        'data_bands': ['NDVI', 'EVI', 'ViewZenith', 'SolarZenith', 'RelativeAzimuth', 'sur_refl_b01', 'sur_refl_b02', 'sur_refl_b03', 'sur_refl_b07'],
         'qc_band': 'DetailedQA',
         'scale': 1000,
         'product_name': 'MXD13A1', # Tên định danh cho file output
@@ -107,7 +108,9 @@ SATELLITE_CONFIG = {
         'type': 'VI',
         'data_bands': [
             'NDVI', 'EVI', 'EVI2', 
-            'view_zenith_angle', 'sun_zenith_angle', 'relative_azimuth_angle', 'pixel_reliability'
+            'view_zenith_angle', 'sun_zenith_angle', 'relative_azimuth_angle', 'pixel_reliability',
+            'NIR_reflectance', 'SWIR1_reflectance', 'SWIR2_reflectance', 'SWIR3_reflectance', 
+            'red_reflectance', 'green_reflectance', 'blue_reflectance'
         ],
         'qc_band': 'VI_Quality', # Lưu ý: VIIRS dùng VI_Quality
         'scale': 1000, #
@@ -135,7 +138,8 @@ GCS_CONFIG = {
     
     # Thư mục gốc trong bucket để chứa dữ liệu dự án này
     # Giúp bucket gọn gàng nếu bạn dùng nó cho nhiều việc khác nhau
-    'base_folder': 'raw', 
+    # 'base_folder': 'raw', 
+    'base_folder': 'highres', 
     
     # Cấu hình tải về (Download settings)
     'download_threads': 16,       # Số luồng tải song song (tùy mạng, 4-16)

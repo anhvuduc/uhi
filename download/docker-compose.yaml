@@ -25,6 +25,7 @@ x-airflow-common: &airflow-common
     - ./dags:/opt/airflow/dags
     - ./config:/opt/airflow/config
     - ./src:/opt/airflow/src # <--- ĐỪNG QUÊN DÒNG NÀY
+    - ./highres:/opt/airflow/highres
 
     # 2. Dữ liệu & Logs (Lưu ra ngoài container)
     - ../mount/logs:/opt/airflow/logs

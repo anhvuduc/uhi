@@ -26,7 +26,7 @@ def _scale_and_mask_bands(image, final_mask, data_bands):
             
         scaled_bands.append(s.rename(band))
 
-    return ee.Image.cat(scaled_bands).copyProperties(image, image.propertyNames())
+    return ee.Image(ee.Image.cat(scaled_bands).copyProperties(image, image.propertyNames()))
 
 
 def apply_mask_vi_modis(image, data_bands, qc_band):

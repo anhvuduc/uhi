@@ -36,12 +36,12 @@ default_args = {
 }
 
 dag = DAG(
-    'gee_pipeline',
+    'download_pipeline',
     default_args=default_args,
     description='Pipeline tối ưu: Sensor -> Export (Multi-Mode) -> Wait -> Download',
     schedule_interval='0 2 5 * *', # Mặc định chạy 2h sáng ngày 5 hàng tháng (cho mode monthly)
     catchup=False,
-    tags=['gee', 'unified', 'optimized', 'v2'],
+    tags=['download', 'unified', 'optimized', 'v2'],
     params={
         'mode': Param('monthly', enum=['yearly', 'historical', 'monthly'], description="Chế độ chạy"),
         'start_date': Param('2023-01-01', type='string', format='date', description="Ngày bắt đầu (cho mode monthly/yearly)"),
@@ -194,29 +194,28 @@ def task_download_local(**kwargs):
 # ==============================================================================
 
 with dag:
-    sensor = PythonSensor(
-        task_id='check_gee_quota',
-        python_callable=sensor_check_quota,
-        mode='reschedule',
-        poke_interval=600,
-        timeout=3600 * 24
-    )
+    # sensor = PythonSensor(
+    #     task_id='check_gee_quota',
+    #     python_callable=sensor_check_quota,
+    #     mode='reschedule',
+    #     poke_interval=600,
+    #     timeout=3600 * 24
+    # )
     
-    export = PythonOperator(
-        task_id='gee_export',
-        python_callable=task_export,
-    )
+    # export = PythonOperator(
+    #     task_id='gee_export',
+    #     python_callable=task_export,
+    # )
     
-    wait = PythonOperator(
-        task_id='wait_for_completion',
-        python_callable=task_wait_completion,
-    )
+    # wait = PythonOperator(
+    #     task_id='wait_for_completion',
+    #     python_callable=task_wait_completion,
+    # )
     
     download = PythonOperator(
         task_id='download_to_local',
         python_callable=task_download_local,
     )
     
-    sensor >> export >> wait >> download
+download
 
-    download

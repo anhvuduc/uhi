@@ -212,7 +212,7 @@ def export_to_bucket(
         # -------------------------
 
         processed_img = col.map(apply_filters).mean()
-        final_image = processed_img.clip(roi)
+        final_image = processed_img.clip(roi.geometry().bounds()) # dùng thêm clip giúp giảm dung lượng file, nhưng có thể thay đổi nếu muốn lấy full city 
         
         task = ee.batch.Export.image.toCloudStorage(
             image=final_image,

@@ -22,8 +22,13 @@ webserver_config.py
 .DS_Store
 .idea/
 .vscode/
+.antigravitycli/
 
 # Docker
 docker-context-files/
 
+# Airflow
 mount/
+
+# Data
+analyze/data/

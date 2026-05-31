@@ -73,7 +73,7 @@ def apply_mask_lst_modis(image, data_bands, qc_band):
             
         scaled_bands.append(s)
 
-    return ee.Image.cat(scaled_bands).copyProperties(image, image.propertyNames())
+    return ee.Image(ee.Image.cat(scaled_bands).copyProperties(image, image.propertyNames()))
 
 
 def apply_mask_lst_viirs(image, data_bands, qc_band):
@@ -127,7 +127,7 @@ def apply_mask_lst_viirs(image, data_bands, qc_band):
         
         if band == 'LST_1KM':
             # Chuyển đổi Kelvin -> Celsius & Áp dụng QC Mask
-            s = b.subtract(273.15).updateMask(final_qc_mask)
+            s = b.multiply(0.02).subtract(273.15).updateMask(final_qc_mask)
             
         elif band == 'View_Angle':
             # VIIRS View Angle: Offset -65 (tương tự MODIS trong collection VNP21)
@@ -138,7 +138,7 @@ def apply_mask_lst_viirs(image, data_bands, qc_band):
             
         scaled_bands.append(s)
 
-    return ee.Image.cat(scaled_bands).copyProperties(image, image.propertyNames())
+    return ee.Image(ee.Image.cat(scaled_bands).copyProperties(image, image.propertyNames()))
 
 """
 ================================================================================
