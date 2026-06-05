@@ -1,7 +1,7 @@
 import ee
 from .common import bitwise_extract
 
-def _scale_and_mask_bands(image, final_mask, data_bands):
+def _scale_and_mask_bands(image, final_mask, data_bands, scale=True):
     """
     Hàm nội bộ: Áp dụng mask và scale giá trị cho các band VI và Angle.
     """
@@ -12,13 +12,16 @@ def _scale_and_mask_bands(image, final_mask, data_bands):
         # 1. Nhóm chỉ số thực vật (NDVI, EVI, EVI2)
         # Giá trị gốc thường là Int16 (-2000 đến 10000), scale 0.0001 -> (-0.2 đến 1.0)
         if band in ['NDVI', 'EVI', 'EVI2']:
-            s = b.multiply(0.0001).updateMask(final_mask)
+            if scale:
+                s = b.multiply(0.0001).updateMask(final_mask)
+            else:
+                s = b.updateMask(final_mask)
             
         # 2. Nhóm góc quan sát (Angles)
         # MODIS/VIIRS Angle thường có scale factor là 0.01
         elif band in ['ViewZenith', 'SolarZenith', 'RelativeAzimuth', 
                       'view_zenith_angle', 'sun_zenith_angle', 'relative_azimuth_angle']:
-            s = b.multiply(0.01) # Không cần mask góc để giữ hình học
+            s = b# Không cần mask góc để giữ hình học
             
         # 3. Các band khác (giữ nguyên hoặc xử lý riêng)
         else:
@@ -85,7 +88,7 @@ def apply_mask_vi_viirs(image, data_bands, qc_band):
     final_mask = mask_quality.And(mask_usefulness)
 
     # Scale và trả về ảnh
-    return _scale_and_mask_bands(image, final_mask, data_bands)
+    return _scale_and_mask_bands(image, final_mask, data_bands, scale=False)
 
 # Hàm tổng quát (Alias) để gọi từ processor chung nếu cần
 def apply_mask_ndvi(image, data_bands, qc_band):
@@ -94,5 +97,10 @@ def apply_mask_ndvi(image, data_bands, qc_band):
     Mặc định sử dụng logic của VIIRS (vì cấu trúc bitmask VNP13 và MOD13 tương đồng).
     """
     # Logic bitmask của MOD13 và VNP13 cơ bản giống nhau ở các bit đầu
-    # Nên có thể dùng chung hàm apply_mask_viirs_vi
-    return apply_mask_vi_viirs(image, data_bands, qc_band)
+    # Phân biệt MODIS (MXD13A1) và VIIRS (VNP13A1) để áp dụng scaling phù hợp
+    is_viirs = (qc_band == 'VI_Quality') or ('EVI2' in data_bands) or ('view_zenith_angle' in data_bands)
+    
+    if is_viirs:
+        return apply_mask_vi_viirs(image, data_bands, qc_band)
+    else:
+        return apply_mask_vi_modis(image, data_bands, qc_band)
