@@ -45,28 +45,28 @@ SATELLITE_CONFIG = {
     'MYD21A1D': {
         'id': 'MODIS/061/MYD21A1D',
         'type': 'LST',
-        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle'],
+        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle', 'Emis_29', 'Emis_31', 'Emis_32'],
         'qc_band': 'QC',
         'scale': 1000
     },
     'MYD21A1N': {
         'id': 'MODIS/061/MYD21A1N',
         'type': 'LST',
-        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle'],
+        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle', 'Emis_29', 'Emis_31', 'Emis_32'],
         'qc_band': 'QC',
         'scale': 1000
     },
     'MOD21A1D': {
         'id': 'MODIS/061/MOD21A1D',
         'type': 'LST',
-        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle'],
+        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle', 'Emis_29', 'Emis_31', 'Emis_32'    ],
         'qc_band': 'QC',
         'scale': 1000
     },
     'MOD21A1N': {
         'id': 'MODIS/061/MOD21A1N',
         'type': 'LST',
-        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle'],
+        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle', 'Emis_29', 'Emis_31', 'Emis_32'],
         'qc_band': 'QC',
         'scale': 1000
     },
@@ -75,14 +75,14 @@ SATELLITE_CONFIG = {
     'VNP21A1D': {
         'id': 'NASA/VIIRS/002/VNP21A1D',
         'type': 'LST',
-        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle'],
+        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle', 'Emis_14', 'Emis_15', 'Emis_16'],
         'qc_band': 'QC', 
         'scale': 1000
     },
     'VNP21A1N': {
         'id': 'NASA/VIIRS/002/VNP21A1N',
         'type': 'LST',
-        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle'],
+        'data_bands': ['LST_1KM', 'View_Time', 'View_Angle', 'Emis_14', 'Emis_15', 'Emis_16'],
         'qc_band': 'QC',
         'scale': 1000
     },
@@ -138,6 +138,6 @@ GCS_CONFIG = {
     'base_folder': 'raw', 
     
     # Cấu hình tải về (Download settings)
-    'download_threads': 16,       # Số luồng tải song song (tùy mạng, 4-16)
+    'download_threads': 64,       # Số luồng tải song song (tùy mạng, 4-16)
     'auto_delete_cloud': False,  # True: Tải xong xóa trên Cloud (Tiết kiệm), False: Giữ làm Backup
 }

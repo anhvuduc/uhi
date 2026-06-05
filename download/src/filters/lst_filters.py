@@ -58,14 +58,14 @@ def apply_mask_lst_modis(image, data_bands, qc_band):
             # Áp dụng mask QC để loại bỏ mây/lỗi
             s = b.subtract(273.15).updateMask(final_qc_mask)
         
-        elif band == 'View_Angle':
-            # View Angle MODIS: Offset -65
-            # KHÔNG áp dụng mask lên band góc nhìn (để giữ thông tin hình học nếu cần nội suy)
-            s = b.subtract(65)
+        # elif band == 'View_Angle':
+        #     # View Angle MODIS: Offset -65
+        #     # KHÔNG áp dụng mask lên band góc nhìn (để giữ thông tin hình học nếu cần nội suy)
+        #     s = b.subtract(65)
             
-        elif band == 'View_Time':
-            # Giữ nguyên View Time
-            s = b
+        # elif band == 'View_Time':
+        #     # Giữ nguyên View Time
+        #     s = b
             
         else:
             # Các band khác (nếu có) giữ nguyên
@@ -129,9 +129,9 @@ def apply_mask_lst_viirs(image, data_bands, qc_band):
             # Chuyển đổi Kelvin -> Celsius & Áp dụng QC Mask
             s = b.subtract(273.15).updateMask(final_qc_mask)
             
-        elif band == 'View_Angle':
-            # VIIRS View Angle: Offset -65 (tương tự MODIS trong collection VNP21)
-            s = b.subtract(65)
+        # elif band == 'View_Angle':
+        #     # VIIRS View Angle: Offset -65 (tương tự MODIS trong collection VNP21)
+        #     s = b.subtract(65)
             
         else:
             s = b
